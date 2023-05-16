@@ -3,74 +3,69 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>CodePen - MediaPipe Pose Landmarker Task for web</title>
+    <title>Real-time Pose Analysis for Kicky-Ups</title>
     <link rel="stylesheet" href="./style.css">
-
 </head>
 
 <body>
-    <!-- partial:index.partial.html -->
-    <!-- Copyright 2023 The MediaPipe Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License. -->
     <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
     <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
-    </script>
 
-    <body>
-        <h1>Pose detection using the MediaPipe PoseLandmarker task</h1>
+    <section id="welcome-section">
+        <h1>Welcome to our Real-time Kicky-Ups Tracking App!</h1>
+        <p>This app uses your webcam to track and analyze your body movements while doing kicky-ups in real-time.
+        </p>
+        <p>Start by enabling your webcam and try doing some kicky-ups. The app will identify the body part you're
+            using and keep track of your performance.</p>
+    </section>
 
-        <section id="demos" class="invisible">
-            <h2>Demo: Detecting Images</h2>
-            <p><b>Click on an image below</b> to see the key landmarks of the body.</p>
+    <section id="demos" class="invisible">
+        <h1>Real-time Kicky-Ups Tracking Using MediaPipe Pose Landmarker</h1>
+        <h2>Demo: Webcam continuous tracking</h2>
+        <p>Click "Enable Webcam" below and accept access to the webcam to start tracking your kicky-ups. The app
+            uses a model trained on the COCO dataset, capable of identifying 80 different classes of objects in an
+            image. <a href="https://github.com/amikelive/coco-labels/blob/master/coco-labels-2014_2017.txt"
+                target="_blank">See a list of available classes</a></p>
 
-            <div class="detectOnClick">
-                <!-- source: https://pixabay.com/photos/woman-asia-beautiful-cambodia-1822514/ -->
-                <img src="https://assets.codepen.io/9177687/woman-ge0f199f92_640.jpg" width="100%"
-                    crossorigin="anonymous" title="Click to get detection!" />
+        <h2>Choose your tracking preference:</h2>
+        <form id="trackingPreference">
+            <input type="radio" id="limbs" name="tracking" value="limbs">
+            <label for="limbs">Track Limbs</label><br>
+            <input type="radio" id="ball" name="tracking" value="ball">
+            <label for="ball">Track Ball</label><br>
+            <input type="radio" id="both" name="tracking" value="both">
+            <label for="both">Track Both</label><br>
+        </form>
+
+        <div id="liveView" class="videoView">
+            <div style="position: relative;" width="1920" height="1080">
+                <video id="webcam" autoplay playsinline onclick="toggleFullscreen(this)"></video>
+                <canvas class="output_canvas" id="output_canvas" width="1920" height="1080"
+                    style="position: absolute; left: 0px; top: 0px;"></canvas>
             </div>
-            <div class="detectOnClick">
-                <!-- source: https://pixabay.com/photos/woman-relaxation-portrait-3053489/ -->
-                <img src="https://assets.codepen.io/9177687/woman-g1af8d3deb_640.jpg" width="100%"
-                    crossorigin="anonymous" title="Click to get detection!" />
-            </div>
+        </div>
 
-            <h2>Demo: Webcam continuous pose landmarks detection</h2>
-            <p>Stand in front of your webcam to get real-time pose landmarker detection.</br>Click <b>enable webcam</b>
-                below
-                and grant access to the webcam if prompted.</p>
+        <div class="button-center">
+            <button id="webcamButton" class="mdc-button mdc-button--raised">
+                <span class="mdc-button__ripple"></span>
+                <span class="mdc-button__label">ENABLE WEBCAM</span>
+            </button>
+            <button id="disableWebcamButton" class="mdc-button mdc-button--raised" style="display: none;">
+                <span class="mdc-button__ripple"></span>
+                <span class="mdc-button__label">DISABLE WEBCAM</span>
+            </button>
+        </div>
 
-            <div id="liveView" class="videoView">
-                <button id="webcamButton" class="mdc-button mdc-button--raised">
-                    <span class="mdc-button__ripple"></span>
-                    <span class="mdc-button__label">ENABLE WEBCAM</span>
-                </button>
-                <div style="position: relative;">
-                    <video id="webcam" style="width: 1280px; height: 720px; position: absolute" autoplay
-                        playsinline></video>
-                    <canvas class="output_canvas" id="output_canvas" width="1280" height="720"
-                        style="position: absolute; left: 0px; top: 0px;"></canvas>
-                </div>
-            </div>
+    </section>
+
+    <footer>
+        <a href="https://www.institutjmg.com/" target="_blank">Institut JMG</a>
+    </footer>
+
+    <!-- partial -->
+    <script type="module" src="./script.js"></script>
 
 
-
-
-
-        </section>
-        <!-- partial -->
-        <script type="module" src="./script.js"></script>
-
-    </body>
+</body>
 
 </html>
