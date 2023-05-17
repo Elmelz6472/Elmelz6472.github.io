@@ -38,7 +38,10 @@
         </form>
 
         <div id="liveView" class="videoView">
-            <div style="position: relative;" width="1920" height="1080">
+            <div id="lastLimbUsed">Last limb used: </div>
+            <div id="fps-counter">FPS: <span id="fps-number">0</span></div>
+            <div id="collisionCounter">Collisions: 0</div>
+            <div id="videoStyle" style="position: relative;" width="1920" height="1080">
                 <video id="webcam" autoplay playsinline onclick="toggleFullscreen(this)"></video>
                 <canvas class="output_canvas" id="output_canvas" width="1920" height="1080"
                     style="position: absolute; left: 0px; top: 0px;"></canvas>
@@ -54,6 +57,7 @@
                 <span class="mdc-button__ripple"></span>
                 <span class="mdc-button__label">DISABLE WEBCAM</span>
             </button>
+
         </div>
 
     </section>
