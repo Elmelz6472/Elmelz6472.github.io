@@ -239,3 +239,94 @@ footer a:hover {
     border-radius: 5px;
     z-index: 100;
 }
+
+#selectionTracking {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    border: 2px solid #000;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background-color: #f5f5f5;
+}
+
+#selectionTracking input[type=radio] {
+    margin-right: 5px;
+}
+
+#selectionTracking label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+
+
+
+.selection {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    border: 2px solid #000;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background-color: #f5f5f5;
+}
+
+.selection input[type=radio] {
+    margin-right: 5px;
+}
+
+.selection label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+
+
+#selectionTrackingBall {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    border: 2px solid #000;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background-color: #f5f5f5;
+}
+
+
+#selectionTrackingBall input[type=radio] {
+    margin-right: 5px;
+}
+
+#selectionTrackingBall label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+
+
+#mode-explanation {
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+#mode-explanation h2 {
+    color: #333;
+    margin-bottom: 15px;
+}
+
+#mode-explanation p {
+    margin-bottom: 10px;
+    line-height: 1.6;
+}

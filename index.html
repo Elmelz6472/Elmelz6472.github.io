@@ -28,14 +28,36 @@
                 target="_blank">See a list of available classes</a></p>
 
         <h2>Choose your tracking preference:</h2>
-        <form id="trackingPreference">
-            <input type="radio" id="limbs" name="tracking" value="limbs">
-            <label for="limbs">Track Limbs</label><br>
-            <input type="radio" id="ball" name="tracking" value="ball">
-            <label for="ball">Track Ball</label><br>
-            <input type="radio" id="both" name="tracking" value="both">
-            <label for="both">Track Both</label><br>
-        </form>
+
+
+        <div class="selection">
+            <input type="radio" id="freeplay" name="mode" value="freeplay" checked>
+            <label for="freeplay">Free Play</label><br>
+            <input type="radio" id="basic" name="mode" value="basic">
+            <label for="basic">Basic</label><br>
+            <input type="radio" id="medium" name="mode" value="medium">
+            <label for="medium">Medium</label><br>
+            <input type="radio" id="advanced" name="mode" value="advanced">
+            <label for="advanced">Advanced</label>
+        </div>
+
+
+        <h2>Body Tracker:</h2>
+        <div id="selectionTracking">
+            <input type="radio" id="Tracking" name="modeTracking" value="Tracking" checked>
+            <label for="noTracking">Tracking</label>
+            <input type="radio" id="noTracking" name="modeTracking" value="noTracking">
+            <label for="noTracking">No Tracking</label>
+        </div>
+
+        <h2>Ball Tracker:</h2>
+        <div id="selectionTrackingBall">
+            <input type="radio" id="TrackingBall" name="modeTrackingBall" value="Tracking" checked>
+            <label for="noTracking">Tracking</label>
+            <input type="radio" id="noTrackingBall" name="modeTrackingBall" value="noTracking">
+            <label for="noTracking">No Tracking</label>
+        </div>
+
 
         <div id="liveView" class="videoView">
             <div id="lastLimbUsed">Last limb used: </div>
@@ -61,6 +83,15 @@
         </div>
 
     </section>
+    <section id="mode-explanation">
+        <h2>Explanation of Modes</h2>
+        <p><strong>Free Play:</strong> Normal mode, you can do whatever you want</p>
+        <p><strong>Basic:</strong> Not allowed to have the same limb multiple times</p>
+        <p><strong>Medium:</strong> Not implemanted yet</p>
+        <p><strong>Advanced:</strong> Need to follow a particular order => left shoulder, right shoulder, left shoulder,
+            left shoulder, right shoulder</p>
+    </section>
+
 
     <footer>
         <a href="https://www.institutjmg.com/" target="_blank">Institut JMG</a>

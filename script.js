@@ -3,37 +3,45 @@ const demosSection = document.getElementById("demos");
 const video = document.getElementById("webcam");
 const liveView = document.getElementById("liveView");
 const canvasElement = document.getElementById("output_canvas");
+const disableWebcamButton = document.getElementById('disableWebcamButton');
 const canvasCtx = canvasElement.getContext("2d");
 const drawingUtils = new DrawingUtils(canvasCtx);
 const scaleFactor = 1;
+const videoHeight = "540px";
+const videoWidth = "720px";
 
+
+let isCameraBeenOpened = false;
+let lastVideoTime = -1;
+let enableWebcamButton;
 let flag_selected;
+let ballFlag;
+let gameMode;
 let runningMode = "IMAGE";
+let currentLimb = null;
 let objectDetector = undefined;
 let poseLandmarker = undefined;
-
 let collisionCount = 0;
 let collisionDelay = 500; // Delay in ms
 let lastCollisionTime = 0;
 
+
 let frameCount = 0;
 let fpsInterval, startTime, now, then, elapsed;
 
+var children = [];
 
+const sequenceAppToFollow = ["LEFT_SHOULDER", "RIGHT_SHOULDER", "LEFT_SHOULDER", "LEFT_SHOULDER", "RIGHT_SHOULDER"];
+const sequenceAppToCreate = [];
 
 const limbLabel = {
     0: "LEFT_SHOULDER",
     1: "RIGHT_SHOULDER",
-    2: "RIGHT_KNEE",
+    2: "LEFT_KNEE",
+    3: "LEFT_FOOT",
+    4: "RIGHT_KNEE",
+    5: "RIGHT_FOOT",
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -46,7 +54,7 @@ const initializeObjectDetector = async () => {
             modelAssetPath: `efficientdet_lite2.tflite`,
             delegate: "GPU"
         },
-        scoreThreshold: .035,
+        scoreThreshold: .03,
         maxResults: 1,
         categoryAllowlist: ["sports ball"],
         runningMode: runningMode
@@ -65,18 +73,17 @@ const createPoseLandmarker = async () => {
         },
         runningMode: runningMode,
         numPoses: 1,
-        minPosePresenceConfidence: 0.7,
-        minTrackingConfidence: 0.7,
-        minPoseDetectionConfidence: 0.7,
+        minPosePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+        minPoseDetectionConfidence: 0.5,
     });
     demosSection.classList.remove("invisible");
 };
 createPoseLandmarker();
 
-let enableWebcamButton;
-const disableWebcamButton = document.getElementById('disableWebcamButton');
 
 disableWebcamButton.addEventListener('click', () => {
+    // Stop the video feed
     const mediaStream = document.getElementById('webcam').srcObject;
     if (mediaStream) {
         const tracks = mediaStream.getTracks();
@@ -84,8 +91,25 @@ disableWebcamButton.addEventListener('click', () => {
             track.stop();
         });
     }
+
+    // Reset text elements
+    document.getElementById('lastLimbUsed').innerText = "Last limb used: None";
+    document.getElementById('collisionCounter').innerText = "Collisions: 0";
+
+
+    // Clear the canvas
+    const canvas = document.getElementById('output_canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Hide disable webcam button and show enable webcam button
     disableWebcamButton.style.display = 'none';
     webcamButton.style.display = 'block';
+
+    // Set the camera open state to false
+    isCameraBeenOpened = false;
+    collisionCount = 0;
+    currentLimb = null;
 });
 
 function hasGetUserMedia() {
@@ -109,9 +133,18 @@ function checkObjectDetector() {
 }
 
 function getTrackingPreference() {
-    // const trackingPreference = document.querySelector('input[name="tracking"]:checked').value;
-    const trackingPreference = "both";
+    const trackingPreference = document.querySelector('input[name="modeTracking"]:checked').value;
     return trackingPreference;
+}
+
+function getTrackingBallPreference() {
+    const trackingBallPreference = document.querySelector('input[name="modeTrackingBall"]:checked').value;
+    return trackingBallPreference;
+}
+
+function getModeSelected() {
+    const modeSelected = document.querySelector('input[name="mode"]:checked').value;
+    return modeSelected;
 }
 
 function toggleWebcamButtons() {
@@ -134,6 +167,9 @@ async function enableCam(event) {
         console.error(err);
     }
     flag_selected = getTrackingPreference();
+    ballFlag = getTrackingBallPreference();
+    gameMode = getModeSelected();
+    isCameraBeenOpened = true;
 }
 
 function processLandmarks(landmarks) {
@@ -142,9 +178,19 @@ function processLandmarks(landmarks) {
 
 }
 
-const videoHeight = "540px";
-const videoWidth = "720px";
-let lastVideoTime = -1;
+
+function isPrefix(arr1, arr2) {
+    if (arr2.length > arr1.length) {
+        return false;
+    }
+    for (let i = 0; i < arr2.length; i++) {
+        if (arr2[i] !== arr1[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 async function setRunningMode() {
     if (runningMode === "IMAGE") {
@@ -163,7 +209,7 @@ async function predictWebcam() {
     await setRunningMode();
     let startTimeMs = performance.now();
 
-    if (video.currentTime !== lastVideoTime && flag_selected) {
+    if (video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
 
         poseLandmarker.detectForVideo(video, startTimeMs, (result) => {
@@ -176,9 +222,12 @@ async function predictWebcam() {
             result.landmarks.forEach(landmark => {
                 let new_landmark = processLandmarks(landmark);
                 let new_radius = (data) => DrawingUtils.lerp(data.from.z, -20, 20, 150, 1)
-                drawingUtils.drawLandmarks(new_landmark, {
-                    radius: new_radius
-                });
+                if (flag_selected == "Tracking") {
+                    drawingUtils.drawLandmarks(new_landmark, {
+                        radius: new_radius
+                    });
+                }
+
 
                 // Loop through new_landmark instead of a single landmark
                 new_landmark.forEach((singleLandmark, index) => {
@@ -203,10 +252,23 @@ async function predictWebcam() {
                                     collisionCount++;
                                     lastCollisionTime = performance.now();
                                     // Update the counter in the HTML
-                                    document.getElementById("collisionCounter").textContent = collisionCount;
-                                    console.log(`Highlight box is in contact with the landmark ${limbLabel[circle.id]}`);
+                                    document.getElementById("collisionCounter").textContent = `Collisions: ${collisionCount}`;
                                     const lastLimbUsed = limbLabel[circle.id] || "Unknown body part";
-                                    document.getElementById('lastLimbUsed').innerText = lastLimbUsed;
+                                    document.getElementById('lastLimbUsed').innerText = lastLimbUsed; //4_>right_knee, 2->left_knee, 5->right_foot, 3->lrft_foot
+                                    if (gameMode == "basic") {
+                                        if (currentLimb == lastLimbUsed) {
+                                            generateExit();
+                                        }
+                                    }
+                                    if (gameMode == "advanced") {
+                                        sequenceAppToCreate.push(limbLabel[circle.id]);
+                                        if (!isPrefix(sequenceAppToCreate, sequenceAppToFollow)) {
+                                            generateExit("wrong pattern");
+                                        }
+
+
+                                    }
+                                    currentLimb = lastLimbUsed;
                                 }
                             }
                         }
@@ -218,16 +280,27 @@ async function predictWebcam() {
         });
 
         const detections = await objectDetector.detectForVideo(video, startTimeMs);
-        displayVideoDetections(detections);
+        if (ballFlag == "Tracking") {
+            displayVideoDetections(detections);
+        }
     }
 
     window.requestAnimationFrame(predictWebcam);
 }
 
 
+function generateExit(custom_message = null) {
+    document.getElementById("disableWebcamButton").click();
+    if (custom_message)
+        alert(custom_message)
+    else
+        alert("You failed the challenge");
+    return;
+}
 
-
-var children = [];
+function generateReset() {
+    document.getElementById("disableWebcamButton").click();
+}
 
 function clearPreviousHighlights() {
     children.forEach(child => {
@@ -302,7 +375,6 @@ function isCollision(circle, highlightBox) {
 }
 
 
-// initialize the timer variables and start the animation
 function startAnimating(fps) {
     fpsInterval = 1000 / fps;
     then = performance.now();
@@ -310,29 +382,36 @@ function startAnimating(fps) {
     animate();
 }
 
-// the animation loop calculates time elapsed since the last loop
-// and only draws if your specified fps interval is achieved
 function animate() {
-    // request another frame
-    requestAnimationFrame(animate);
 
-    // calc elapsed time since last loop
+    requestAnimationFrame(animate);
     now = performance.now();
     elapsed = now - then;
 
-    // if enough time has elapsed, draw the next frame
     if (elapsed > fpsInterval) {
-        // Get ready for next frame by setting then=now. Also, adjust for fpsInterval not being multiple of 16.67
         then = now - (elapsed % fpsInterval);
 
-        // Put your drawing code here
         frameCount++;
         if (now - startTime >= 1000) {
-            document.getElementById('fps-number').innerText = frameCount;
+            if (isCameraBeenOpened) {
+                document.getElementById('fps-number').innerText = frameCount;
+            }
+            else {
+                document.getElementById('fps-number').innerText = 0;
+            }
             frameCount = 0;
             startTime = now;
         }
     }
 }
 
-startAnimating(60); // start animating with 60 fps target
+startAnimating(60);
+
+
+
+
+
+
+
+
+
