@@ -330,3 +330,24 @@ footer a:hover {
     margin-bottom: 10px;
     line-height: 1.6;
 }
+
+
+#fullscreenButton {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: #007f8b;
+    color: #f3f3f3;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#fullscreenButton:hover {
+    background-color: #005c66;
+}
+
+#fullscreenButton:focus {
+    outline: none;
+}

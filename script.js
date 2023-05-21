@@ -1,4 +1,9 @@
-import { PoseLandmarker, ObjectDetector, FilesetResolver, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
+import {
+    PoseLandmarker,
+    ObjectDetector,
+    FilesetResolver,
+    DrawingUtils
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
 const demosSection = document.getElementById("demos");
 const video = document.getElementById("webcam");
 const liveView = document.getElementById("liveView");
@@ -6,9 +11,12 @@ const canvasElement = document.getElementById("output_canvas");
 const disableWebcamButton = document.getElementById('disableWebcamButton');
 const canvasCtx = canvasElement.getContext("2d");
 const drawingUtils = new DrawingUtils(canvasCtx);
-const scaleFactor = 1;
-const videoHeight = "540px";
-const videoWidth = "720px";
+let scaleFactor = 1;
+let videoHeight = "540px";
+let videoWidth = "720px"
+let originalVideoWidth = 720; // initial video width
+let originalVideoHeight = 540; // initial video heigh;
+
 
 
 let isCameraBeenOpened = false;
@@ -51,7 +59,9 @@ const initializeObjectDetector = async () => {
     const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm");
     objectDetector = await ObjectDetector.createFromOptions(vision, {
         baseOptions: {
-            modelAssetPath: `efficientdet_lite2.tflite`,
+            // modelAssetPath: `efficientdet_lite2.tflite`,
+            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite`,
+
             delegate: "GPU"
         },
         scoreThreshold: .03,
@@ -73,9 +83,9 @@ const createPoseLandmarker = async () => {
         },
         runningMode: runningMode,
         numPoses: 1,
-        minPosePresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-        minPoseDetectionConfidence: 0.5,
+        minPosePresenceConfidence: 0.75,
+        minTrackingConfidence: 0.75,
+        minPoseDetectionConfidence: 0.75,
     });
     demosSection.classList.remove("invisible");
 };
@@ -119,8 +129,7 @@ function hasGetUserMedia() {
 if (hasGetUserMedia()) {
     enableWebcamButton = document.getElementById("webcamButton");
     enableWebcamButton.addEventListener("click", enableCam);
-}
-else {
+} else {
     console.warn("getUserMedia() is not supported by your browser");
 }
 
@@ -195,8 +204,12 @@ function isPrefix(arr1, arr2) {
 async function setRunningMode() {
     if (runningMode === "IMAGE") {
         runningMode = "VIDEO";
-        await objectDetector.setOptions({ runningMode: "VIDEO" });
-        await poseLandmarker.setOptions({ runningMode: "VIDEO" });
+        await objectDetector.setOptions({
+            runningMode: "VIDEO"
+        });
+        await poseLandmarker.setOptions({
+            runningMode: "VIDEO"
+        });
     }
 }
 
@@ -315,16 +328,54 @@ function createHighlightBox(detection) {
     const highlighter = document.createElement("div");
     highlighter.className = "highlighter";
 
-    // Apply the scale factor to the bounding box dimensions and origins
-    const scaledWidth = detection.boundingBox.width * scaleFactor;
-    const scaledHeight = detection.boundingBox.height * scaleFactor;
-    const scaledOriginX = detection.boundingBox.originX - (scaledWidth - detection.boundingBox.width) / 2;
-    const scaledOriginY = detection.boundingBox.originY - (scaledHeight - detection.boundingBox.height) / 2;
+    let scaledWidth = detection.boundingBox.width * scaleFactor;
+    let scaledHeight = detection.boundingBox.height * scaleFactor;
+    let scaledOriginX = detection.boundingBox.originX * scaleFactor;
+    let scaledOriginY = detection.boundingBox.originY * scaleFactor;
 
-    highlighter.style.left = `${canvasElement.offsetWidth - scaledWidth - scaledOriginX}px`;
-    highlighter.style.top = `${scaledOriginY}px`;
-    highlighter.style.width = `${scaledWidth}px`;
-    highlighter.style.height = `${scaledHeight}px`;
+    if (document.fullscreenElement) {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Adjust for aspect ratio
+        const videoAspectRatio = originalVideoWidth / originalVideoHeight;
+        const viewportAspectRatio = viewportWidth / viewportHeight;
+
+        if (videoAspectRatio > viewportAspectRatio) {
+            // Video has a wider aspect ratio than the viewport, adjust height
+            const adjustedHeight = viewportWidth / videoAspectRatio;
+            const heightOffset = (viewportHeight - adjustedHeight) / 2;
+
+            scaledOriginY = (scaledOriginY / originalVideoHeight) * adjustedHeight + heightOffset;
+            scaledHeight = (scaledHeight / originalVideoHeight) * adjustedHeight;
+        } else {
+            // Viewport has a wider aspect ratio than the video, adjust width
+            const adjustedWidth = viewportHeight * videoAspectRatio;
+            const widthOffset = (viewportWidth - adjustedWidth) / 2;
+
+            scaledOriginX = (scaledOriginX / originalVideoWidth) * adjustedWidth + widthOffset;
+            scaledWidth = (scaledWidth / originalVideoWidth) * adjustedWidth;
+        }
+
+        // Invert the x-axis when in fullscreen mode
+        const invertedOriginX = viewportWidth - (scaledOriginX + scaledWidth);
+
+        // Convert pixel values to percentages
+        const leftPercentage = (invertedOriginX / viewportWidth) * 100;
+        const topPercentage = (scaledOriginY / viewportHeight) * 100;
+        const widthPercentage = (scaledWidth / viewportWidth) * 100;
+        const heightPercentage = (scaledHeight / viewportHeight) * 100;
+
+        highlighter.style.left = `${leftPercentage}%`;
+        highlighter.style.top = `${topPercentage}%`;
+        highlighter.style.width = `${widthPercentage}%`;
+        highlighter.style.height = `${heightPercentage}%`;
+    } else {
+        highlighter.style.left = `${canvasElement.offsetWidth - scaledWidth - scaledOriginX}px`;
+        highlighter.style.top = `${scaledOriginY}px`;
+        highlighter.style.width = `${scaledWidth}px`;
+        highlighter.style.height = `${scaledHeight}px`;
+    }
 
     return highlighter;
 }
@@ -342,21 +393,106 @@ function displayVideoDetections(result) {
     }
 }
 
+
+
+function toggleFullscreen() {
+    const fullscreenElement =
+        document.fullscreenElement || document.webkitFullscreenElement;
+    const container = document.getElementById('liveView');
+
+    if (fullscreenElement) {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.mozCancelFullScreen) { // Firefox
+            document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { // IE/Edge
+            document.msExitFullscreen();
+        }
+    } else {
+        if (container.requestFullscreen) {
+            container.requestFullscreen();
+        } else if (container.mozRequestFullScreen) { // Firefox
+            container.mozRequestFullScreen();
+        } else if (container.webkitRequestFullscreen) { // Chrome, Safari and Opera
+            container.webkitRequestFullscreen();
+        } else if (container.msRequestFullscreen) { // IE/Edge
+            container.msRequestFullscreen();
+        }
+    }
+}
+
+window.toggleFullscreen = toggleFullscreen;
+
+
+// Handle fullscreen change event for all browsers
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+function handleFullscreenChange() {
+    const fullscreenElement =
+        document.fullscreenElement || document.webkitFullscreenElement;
+    const video = document.getElementById('webcam');
+    const canvasElement = document.getElementById('output_canvas');
+
+    if (fullscreenElement) {
+        // set the video and canvas dimensions to fill the screen
+        video.style.height = '100vh';
+        video.style.width = '100vw';
+        canvasElement.style.height = '100vh';
+        canvasElement.style.width = '100vw';
+
+        // update the videoWidth and videoHeight variables
+        videoWidth = video.clientWidth;
+        videoHeight = video.clientHeight;
+    } else {
+        // set the video and canvas dimensions back to original when exiting fullscreen
+        video.style.height = '540px';
+        video.style.width = '720px';
+        canvasElement.style.height = '540px';
+        canvasElement.style.width = '720px';
+
+        // update the videoWidth and videoHeight variables
+        videoWidth = 720; // original video width
+        videoHeight = 540; // original video height
+    }
+
+    // Update scaleFactor whenever the video dimensions change
+    scaleFactor = Math.min(videoWidth / originalVideoWidth, videoHeight / originalVideoHeight);
+}
+
+
+
 function isCollision(circle, highlightBox) {
 
-    const boxCorners = [
-        { x: highlightBox.x, y: highlightBox.y }, // top-left
-        { x: highlightBox.x + highlightBox.width, y: highlightBox.y }, // top-right
-        { x: highlightBox.x, y: highlightBox.y + highlightBox.height }, // bottom-left
-        { x: highlightBox.x + highlightBox.width, y: highlightBox.y + highlightBox.height } // bottom-right
+    const boxCorners = [{
+        x: highlightBox.x,
+        y: highlightBox.y
+    }, // top-left
+    {
+        x: highlightBox.x + highlightBox.width,
+        y: highlightBox.y
+    }, // top-right
+    {
+        x: highlightBox.x,
+        y: highlightBox.y + highlightBox.height
+    }, // bottom-left
+    {
+        x: highlightBox.x + highlightBox.width,
+        y: highlightBox.y + highlightBox.height
+    } // bottom-right
     ];
 
     // Check if the circle is entirely contained within the box
-    if (circle.x + circle.radius < highlightBox.x + highlightBox.width &&
-        circle.x - circle.radius > highlightBox.x &&
-        circle.y + circle.radius < highlightBox.y + highlightBox.height &&
-        circle.y - circle.radius > highlightBox.y) {
-        return true;
+    if ((circle.x + circle.radius < highlightBox.x + highlightBox.width)) {
+        if (circle.x - circle.radius > highlightBox.x) {
+            if (circle.y + circle.radius < highlightBox.y + highlightBox.height) {
+                if (circle.y - circle.radius > highlightBox.y) {
+                    return true;
+                }
+            }
+        }
     }
 
     // Check each corner of the box
@@ -395,8 +531,7 @@ function animate() {
         if (now - startTime >= 1000) {
             if (isCameraBeenOpened) {
                 document.getElementById('fps-number').innerText = frameCount;
-            }
-            else {
+            } else {
                 document.getElementById('fps-number').innerText = 0;
             }
             frameCount = 0;
@@ -406,12 +541,5 @@ function animate() {
 }
 
 startAnimating(60);
-
-
-
-
-
-
-
 
 
